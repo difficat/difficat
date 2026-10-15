@@ -1,0 +1,22 @@
+{
+  "name": "difficat",
+  "version": "1.0.0",
+  "description": "Compares a website against its migrated, redesigned or staging copy on page existence, content and visual regression through DiffiCat's MCP server, with a skill that knows when to run a comparison and how to behave at the payment wall.",
+  "author": {
+    "name": "DiffiCat",
+    "email": "noreply@difficat.com",
+    "url": "https://difficat.com"
+  },
+  "homepage": "https://difficat.com/agents",
+  "repository": "https://github.com/difficat/difficat",
+  "license": "MIT",
+  "keywords": ["website", "migration", "visual-regression", "screenshot", "qa", "deploy", "mcp"],
+  "userConfig": {
+    "key": {
+      "type": "string",
+      "title": "DiffiCat prepaid or Pro key",
+      "description": "Optional. A dck_… key from https://app.difficat.com/prepaid or a Pro account. Every job is debited from it; leave it empty to use the daily allowance.",
+      "sensitive": true
+    }
+  }
+}

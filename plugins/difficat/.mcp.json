@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "difficat": {
+      "type": "http",
+      "url": "https://app.difficat.com/mcp",
+      "headers": {
+        "X-DiffiCat-Key": "${user_config.key}"
+      }
+    }
+  }
+}

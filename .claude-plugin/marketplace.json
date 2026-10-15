@@ -1,0 +1,18 @@
+{
+  "name": "difficat",
+  "description": "DiffiCat for Claude Code: compare a website against its migrated, redesigned or staging copy on page existence, content and visual regression.",
+  "owner": {
+    "name": "DiffiCat",
+    "email": "noreply@difficat.com",
+    "url": "https://difficat.com"
+  },
+  "plugins": [
+    {
+      "name": "difficat",
+      "source": "./plugins/difficat",
+      "description": "DiffiCat's MCP server plus a skill that runs a page-by-page comparison of two sites after a migration, redesign or deploy and stops at the payment wall.",
+      "category": "testing",
+      "tags": ["website", "migration", "visual-regression", "screenshot", "qa", "deploy", "mcp"]
+    }
+  ]
+}
