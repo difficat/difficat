@@ -31,7 +31,7 @@ The server alone, no skill:
 claude mcp add --transport http difficat https://app.difficat.com/mcp
 ```
 
-With a key: `claude mcp add --transport http --header "Authorization: Bearer $DIFFICAT_KEY" difficat https://app.difficat.com/mcp`.
+With a key: `claude mcp add --transport http --header "Authorization: Bearer dck_…" difficat https://app.difficat.com/mcp`.
 
 ## Links
 

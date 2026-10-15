@@ -1,6 +1,6 @@
 {
   "name": "difficat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Compares a website against its migrated, redesigned or staging copy on page existence, content and visual regression through DiffiCat's MCP server, with a skill that knows when to run a comparison and how to behave at the payment wall.",
   "author": {
     "name": "DiffiCat",
