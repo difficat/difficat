@@ -1,0 +1,198 @@
+name: DiffiCat
+description: Gate a deploy on a DiffiCat comparison of two sites - page existence, content and visual regression.
+author: DiffiCat
+branding:
+  icon: eye
+  color: purple
+
+# Every input reaches the shell only through an `env:` variable, quoted, so a
+# crafted input is one argument and never a command. Site text the CLI prints
+# is neutralised by the CLI; the summary wraps it in a fenced code block.
+
+inputs:
+  source:
+    description: Site A, the reference site (full URL). Required unless pairs is given.
+    required: false
+    default: ''
+  target:
+    description: Site B, the site under test, for example a preview deployment (full URL). Required unless pairs is given. Private and loopback hosts are refused by the service, so the URL must be public.
+    required: false
+    default: ''
+  pairs:
+    description: Path to a JSON array of { "source", "target" } page pairs, compared instead of source and target.
+    required: false
+    default: ''
+  max-pages:
+    description: Ceiling on the pages compared. Passed only when set - the CLI compares at most 50 pages of a site pair by default and never caps a pairs file.
+    required: false
+    default: ''
+  min-pages:
+    description: Fewer compared pages fails the step with exit code 3.
+    required: false
+    default: '1'
+  max-price:
+    description: Refuse a job priced above this amount in USD before anything is charged.
+    required: false
+    default: ''
+  key:
+    description: A DiffiCat prepaid or Pro key, from a secret. Every keyed run is billed. Without it the daily allowance of the runner's address applies, which GitHub-hosted runners share with every GitHub user.
+    required: false
+    default: ''
+  fail-on:
+    description: failed (any failed check, the default), broken (existence failures only) or none (report only).
+    required: false
+    default: failed
+  width:
+    description: Viewport width in px, 320 to 2560.
+    required: false
+    default: ''
+  threshold:
+    description: Visual diff tolerance as a fraction from 0 to 1 (0.05 is 5%).
+    required: false
+    default: ''
+  version:
+    description: The difficat CLI version to run. Defaults to the exact version this action was released with; set it to hold or roll back.
+    required: false
+    default: '3.85.0' # cli-version-pin
+
+outputs:
+  exit-code:
+    description: The CLI's exit code - 0 passed, 1 a page failed, 2 payment required, 3 error.
+    value: ${{ steps.compare.outputs.code }}
+  job-id:
+    description: The DiffiCat job id when a job was started.
+    value: ${{ steps.compare.outputs.job }}
+
+runs:
+  using: composite
+  steps:
+    - id: gate
+      shell: bash
+      env:
+        DIFFICAT_KEY: ${{ inputs.key }}
+        EVENT_NAME: ${{ github.event_name }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        BASE_REPO: ${{ github.repository }}
+      run: |
+        if [ -n "$DIFFICAT_KEY" ]; then
+          echo "::add-mask::$DIFFICAT_KEY"
+        fi
+        if [ -z "$DIFFICAT_KEY" ] && [ "$EVENT_NAME" = pull_request ] && [ -n "$HEAD_REPO" ] && [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+          echo "::notice title=DiffiCat skipped::This pull request comes from a fork, which has no DIFFICAT_KEY secret, and GitHub-hosted runners share their addresses, so the keyless allowance is not reliable here. The comparison was not run."
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - id: compare
+      if: steps.gate.outputs.skip == 'false'
+      shell: bash
+      env:
+        DIFFICAT_KEY: ${{ inputs.key }}
+        SOURCE: ${{ inputs.source }}
+        TARGET: ${{ inputs.target }}
+        PAIRS: ${{ inputs.pairs }}
+        MAX_PAGES: ${{ inputs.max-pages }}
+        MIN_PAGES: ${{ inputs.min-pages }}
+        MAX_PRICE: ${{ inputs.max-price }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        WIDTH: ${{ inputs.width }}
+        THRESHOLD: ${{ inputs.threshold }}
+        VERSION: ${{ inputs.version }}
+        OUT_DIR: ${{ runner.temp }}/difficat
+      run: |
+        set -u
+        mkdir -p "$OUT_DIR"
+        if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "::error title=DiffiCat::The version input must be an exact difficat release such as 3.84.0."
+          echo "code=3" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        args=(compare --json --report "$OUT_DIR/report.json" --min-pages "$MIN_PAGES" --fail-on "$FAIL_ON")
+        if [ -n "$MAX_PAGES" ]; then args+=(--max-pages "$MAX_PAGES"); fi
+        if [ -n "$MAX_PRICE" ]; then args+=(--max-price "$MAX_PRICE"); fi
+        if [ -n "$WIDTH" ]; then args+=(--width "$WIDTH"); fi
+        if [ -n "$THRESHOLD" ]; then args+=(--threshold "$THRESHOLD"); fi
+        if [ -n "$PAIRS" ]; then
+          args+=(--pairs "$PAIRS")
+        else
+          args+=(-- "$SOURCE" "$TARGET")
+        fi
+        code=0
+        npx -y "difficat@$VERSION" "${args[@]}" > "$OUT_DIR/digest.json" 2> "$OUT_DIR/stderr.txt" || code=$?
+        cat "$OUT_DIR/stderr.txt"
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+        job=$(jq -r '.jobId // empty' "$OUT_DIR/digest.json" 2>/dev/null || true)
+        if printf '%s' "$job" | grep -Eq '^web-[a-z0-9-]+$'; then
+          echo "job=$job" >> "$GITHUB_OUTPUT"
+        fi
+        if [ "$code" = 2 ]; then
+          echo "::notice title=DiffiCat payment required::$(sed -e 's/%/%25/g' "$OUT_DIR/stderr.txt" | tr '\n' ' ')"
+        fi
+
+    - id: summary
+      if: always() && steps.gate.outputs.skip == 'false'
+      shell: bash
+      env:
+        CODE: ${{ steps.compare.outputs.code }}
+        OUT_DIR: ${{ runner.temp }}/difficat
+      run: |
+        code=${CODE:-3}
+        {
+          echo "## DiffiCat"
+          echo
+          if [ -s "$OUT_DIR/digest.json" ] && jq -e '.summary' "$OUT_DIR/digest.json" > /dev/null 2>&1; then
+            jq -r '.summary | "**\(.failed) of \(.totalPages) pages failed, \(.passed) passed.**"' "$OUT_DIR/digest.json"
+            echo
+            echo '````text'
+            jq -r '
+              def clean: tostring | gsub("`"; "'"'"'") | gsub("[[:cntrl:]]"; " ");
+              def rank: if . == "critical" then 0 elif . == "high" then 1 else 2 end;
+              [ .results[] | select(.status == "fail")
+                | (.issues | sort_by(.severity | rank) | first) as $worst
+                | { rank: (if $worst then ($worst.severity | rank) else 3 end),
+                    line: ("FAIL \(.url | clean) [\(.failedChecks | join(", "))]"
+                      + (if $worst then " \($worst.severity): \($worst.description | clean)" else "" end)) } ]
+              | sort_by(.rank) | .[].line
+            ' "$OUT_DIR/digest.json"
+            echo '````'
+          else
+            echo "**No report was produced (exit code $code): an infrastructure error, not page failures.**"
+            if [ -s "$OUT_DIR/stderr.txt" ]; then
+              echo
+              echo '````text'
+              tr -d '`' < "$OUT_DIR/stderr.txt"
+              echo '````'
+            fi
+          fi
+          echo
+          echo "| Exit code | Meaning |"
+          echo "|---|---|"
+          echo "| 0 | every page passed |"
+          echo "| 1 | a page failed under fail-on |"
+          echo "| 2 | payment required: the allowance is used up and no key was given, or the key's balance is short |"
+          echo "| 3 | error: invalid input, a job that failed, a timeout, or no report |"
+          echo
+          echo "This run exited $code. The full report is the \`difficat-report\` artifact of this workflow run."
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - if: always() && steps.gate.outputs.skip == 'false'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: difficat-report
+        path: |
+          ${{ runner.temp }}/difficat/report.json
+          ${{ runner.temp }}/difficat/digest.json
+        if-no-files-found: ignore
+        retention-days: 30
+
+    - if: always() && steps.gate.outputs.skip == 'false'
+      shell: bash
+      env:
+        CODE: ${{ steps.compare.outputs.code }}
+      run: |
+        case "${CODE:-3}" in
+          0) exit 0 ;;
+          1|2|3) exit "$CODE" ;;
+          *) exit 3 ;;
+        esac

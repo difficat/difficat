@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "difficat": {
+      "type": "http",
+      "url": "https://app.difficat.com/mcp"
+    }
+  }
+}

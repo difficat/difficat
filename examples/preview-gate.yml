@@ -1,0 +1,30 @@
+# Compares production against the preview deployment of every pull request
+# and fails the check when a page is missing, changed or looks different.
+# Replace the preview step with the one your host provides (Vercel, Netlify,
+# Cloudflare Pages and the like all expose the preview URL as a step output).
+
+name: Preview gate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - id: preview
+        name: Resolve the preview URL
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: echo "url=https://pr-$PR_NUMBER.preview.your-site.test" >> "$GITHUB_OUTPUT"
+
+      - name: Compare production against the preview
+        uses: difficat/difficat@v1
+        with:
+          source: https://www.your-site.test
+          target: ${{ steps.preview.outputs.url }}
+          max-pages: 50
+          key: ${{ secrets.DIFFICAT_KEY }}
