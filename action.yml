@@ -53,7 +53,7 @@ inputs:
   version:
     description: The difficat CLI version to run. Defaults to the exact version this action was released with; set it to hold or roll back.
     required: false
-    default: '3.89.0' # cli-version-pin
+    default: '3.90.0' # cli-version-pin
 
 outputs:
   exit-code:
@@ -174,7 +174,7 @@ runs:
           echo "| 2 | payment required: the allowance is used up and no key was given, or the key's balance is short |"
           echo "| 3 | error: invalid input, a job that failed, a timeout, or no report |"
           echo
-          echo "This run exited $code. The full report is the \`difficat-report\` artifact of this workflow run."
+          echo "This run exited $code. The full report and the source, target and diff screenshots of the failed pages are the \`difficat-report\` artifact of this workflow run."
         } >> "$GITHUB_STEP_SUMMARY"
 
     - if: always() && steps.gate.outputs.skip == 'false'
@@ -184,6 +184,7 @@ runs:
         path: |
           ${{ runner.temp }}/difficat/report.json
           ${{ runner.temp }}/difficat/digest.json
+          ${{ runner.temp }}/difficat/report-screenshots/
         if-no-files-found: ignore
         retention-days: 30
 

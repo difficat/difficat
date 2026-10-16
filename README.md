@@ -36,7 +36,7 @@ Job: web-c027fd3e-defb-46a7-96d5-e393fc1fe230
 | `--fail-on <mode>` | `failed` (any failed check, the default), `broken` (existence failures only) or `none` |
 | `--wait <seconds>` | give up waiting after this long (default 1800) |
 | `--dry-run` | print the quoted page count and amount, start nothing |
-| `--report <file>` | save the full report, every page, as JSON |
+| `--report <file>` | save the full report, every page, as JSON, with the source, target and diff PNGs of every failed page in `<file>-screenshots/` beside it (the report names them by that relative path) |
 | `--json` | print the digest JSON on stdout, the verdict on stderr |
 | `--api <origin>` | another API origin (printed whenever it is not the default) |
 
@@ -65,7 +65,7 @@ npx difficat compare https://old.difficat.com https://new.difficat.com
 ### What the command never prints
 
 - The `jobToken` the API issues for reading a job. It is used for the status, report and file reads and appears in no output, log, summary or artifact.
-- A report URL: the report needs the token, so the command prints the job id and, with `--report`, the saved file's path.
+- A report URL: the report needs the token, so the command prints the job id and, with `--report`, the saved file's path and the screenshot folder's.
 - Raw page text: every site-derived string has control characters and a leading `::` escaped, so a hostile page cannot emit a workflow command through the output.
 
 ### Preview URLs must be public
@@ -85,7 +85,7 @@ Gate a pull request on a comparison of production against the preview deployment
     key: ${{ secrets.DIFFICAT_KEY }}
 ```
 
-The step fails when a page fails. The job summary shows the verdict and the failed pages; the full report is the `difficat-report` artifact of the run. A complete workflow is in [`examples/preview-gate.yml`](examples/preview-gate.yml).
+The step fails when a page fails. The job summary shows the verdict and the failed pages; the full report and the source, target and diff screenshots of every failed page are the `difficat-report` artifact of the run. A complete workflow is in [`examples/preview-gate.yml`](examples/preview-gate.yml).
 
 | Input | Default | Meaning |
 |---|---|---|
