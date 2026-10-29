@@ -2,7 +2,7 @@
   "mcpServers": {
     "difficat": {
       "type": "http",
-      "url": "https://app.difficat.com/mcp",
+      "url": "https://app.difficat.com/mcp?via=plugin",
       "headers": {
         "X-DiffiCat-Key": "${user_config.key}"
       }

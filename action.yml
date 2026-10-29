@@ -53,7 +53,7 @@ inputs:
   version:
     description: The difficat CLI version to run. Defaults to the exact version this action was released with; set it to hold or roll back.
     required: false
-    default: '3.111.2' # cli-version-pin
+    default: '3.141.0' # cli-version-pin
 
 outputs:
   exit-code:

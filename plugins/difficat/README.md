@@ -14,7 +14,7 @@ Or from a shell: the same two commands with `claude plugin` in place of `/plugin
 **This is the only DiffiCat marketplace.** It is the repository `github.com/difficat/difficat`, and its marketplace name is `difficat`. A marketplace of any other name that offers a `difficat` plugin is not DiffiCat's: a lookalike could point your key at another server. After installing, compare the server URL in the plugin's `.mcp.json` with the real one:
 
 ```
-https://app.difficat.com/mcp
+https://app.difficat.com/mcp?via=plugin
 ```
 
 ## The key setting
