@@ -113,7 +113,7 @@ How it behaves:
 
 ## MCP setup
 
-DiffiCat's MCP server is a stateless Streamable HTTP endpoint at `https://app.difficat.com/mcp`. The same allowance and keys apply; a key is sent once as a header on the client, never as a tool argument.
+DiffiCat's MCP server is a stateless Streamable HTTP endpoint at `https://app.difficat.com/mcp`. By default it serves six tools: `check_page` (one live page against a baseline), `diff_deploy` (a preview against production), `wait_for_comparison`, `get_report`, `capture_screenshot` and `get_balance`; `https://app.difficat.com/mcp?surface=full` serves all seventeen. The same allowance and keys apply; a key is sent once as a header on the client, never as a tool argument.
 
 | Client | Configuration |
 |---|---|

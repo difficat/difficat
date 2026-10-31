@@ -17,6 +17,8 @@ Or from a shell: the same two commands with `claude plugin` in place of `/plugin
 https://app.difficat.com/mcp?via=plugin
 ```
 
+The plugin's URL serves all seventeen tools, `check_page` and `diff_deploy` among them: `check_page` checks one live page against a baseline captured on the first call, a snapshot or the production page, and `diff_deploy` compares a preview or staging deploy with production. The bare `https://app.difficat.com/mcp` serves only six tools by default; add `?surface=full` for the rest.
+
 ## The key setting
 
 The plugin runs without any setting: the daily allowance of your address applies (see [difficat.com/agents](https://difficat.com/agents)), and the skill tells Claude to stop and show you the ways to pay when it is used up.
